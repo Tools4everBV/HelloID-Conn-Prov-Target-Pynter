@@ -206,17 +206,19 @@ try {
     switch ($action) {
         'DisableAccount' {
             Write-Information "Disabling Pynter account with accountReference: [$($actionContext.References.Account)]"
-            $accountDisableObject = [PSCustomObject]@{
+            ##To clear all fields except mandatory##
+            <#$accountDisableObject = [PSCustomObject]@{
                 FirstName = $correlatedAccount.FirstName
                 FamilyName = $correlatedAccount.FamilyName
                 Email = $correlatedAccount.Email
                 ExternalIdentifier = $correlatedAccount.ExternalIdentifier
+                ManagerExternalIdentifier = $correlatedAccount.ManagerExternalIdentifier
                 Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-            }
+            }#>
 
-            if (![string]::IsNullOrEmpty($actionContext.Data.ContractEndTime)){
-                $accountDisableObject | Add-Member -MemberType NoteProperty -Name 'ContractEndTime' -Value $actionContext.Data.ContractEndTime
-            }
+            ##To keep current fieldvalues and only update necessary##
+            $accountDisableObject = $correlatedAccount
+            $accountDisableObject.Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
 
             # Create UpdatePerson XML body
             # https://{customer}.pynter.nl/service/apiservice.asmx?op=UpdatePerson

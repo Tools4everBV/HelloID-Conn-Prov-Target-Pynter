@@ -1,7 +1,7 @@
-##################################################
-# HelloID-Conn-Prov-Target-Pynter-Delete
+#################################################
+# HelloID-Conn-Prov-Target-Pynter-Import-Persons
 # PowerShell V2
-##################################################
+#################################################
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -23,7 +23,8 @@ function Resolve-PynterError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -34,10 +35,11 @@ function Resolve-PynterError {
         try {
             $errorDetailsObject = [xml]($httpErrorObj.ErrorDetails)
             $errorNode = $errorDetailsObject.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Fault']")
-            if ($errorNode.Reason){
+            if ($errorNode.Reason) {
                 $httpErrorObj.FriendlyMessage = $errorNode.Reason.Text.'#text'
             }
-        } catch {
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $_.Exception.Message
         }
         Write-Output $httpErrorObj
@@ -67,11 +69,11 @@ function New-PynterSoapXmlBody {
         $methodElement = $xml.CreateElement($SoapMethod, $namespace)
 
         $usernameNode = $xml.CreateElement('username', $namespace)
-        $null = $usernameNode.InnerText = $actionContext.Configuration.UserName
+        $null = $usernameNode.InnerText = $actionContext.configuration.UserName
         $null = $methodElement.AppendChild($usernameNode)
 
         $passwordNode = $xml.CreateElement('password', $namespace)
-        $null = $passwordNode.InnerText = $actionContext.Configuration.Password
+        $null = $passwordNode.InnerText = $actionContext.configuration.Password
         $null = $methodElement.AppendChild($passwordNode)
 
         foreach ($key in $Parameters.Keys) {
@@ -81,26 +83,30 @@ function New-PynterSoapXmlBody {
                 foreach ($prop in $Parameters[$key].PSObject.Properties) {
                     $subNode = $xml.CreateElement($prop.Name, $namespace)
                     $value = $prop.Value
-                    if (-not[string]::IsNullOrEmpty($value)){
+                    if (-not[string]::IsNullOrEmpty($value)) {
                         if ($prop.Name -eq "contractStartTime" -or $prop.Name -eq "contractEndTime") {
                             $dateValue = [datetime]$value
                             $subNode.SetAttribute('xsi:type', 'xsd:dateTime')
                             $subNode.InnerText = $dateValue.ToString("yyyy-MM-ddTHH:mm:ss")
-                        } elseif ($value -is [bool]) {
+                        }
+                        elseif ($value -is [bool]) {
                             $subNode.SetAttribute('xsi:type', 'xsd:boolean')
                             $subNode.InnerText = $value.ToString().ToLower()
-                        } else {
+                        }
+                        else {
                             $subNode.InnerText = $value
                         }
                         $null = $paramNode.AppendChild($subNode)
                     }
                 }
-            } else {
+            }
+            else {
                 $value = $Parameters[$key]
                 if ($value -is [bool]) {
                     $paramNode.SetAttribute('xsi:type', 'xsd:boolean')
                     $paramNode.InnerText = $value.ToString().ToLower()
-                } else {
+                }
+                else {
                     $paramNode.InnerText = $value
                 }
             }
@@ -112,7 +118,8 @@ function New-PynterSoapXmlBody {
         $null = $xml.AppendChild($envelope)
 
         Write-Output $xml.OuterXml
-    } catch {
+    }
+    catch {
         $PSCmdlet.ThrowTerminatingError($_)
     }
 }
@@ -152,122 +159,165 @@ function Invoke-PynterSOAPRequest {
                 }
                 Write-Output $obj
             }
-        } elseif ($($success.'#text') -eq 'false') {
+        }
+        elseif ($($success.'#text') -eq 'false') {
             $errorNode = $xmlResponse.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Error']")
             if ($null -ne $errorNode) {
                 throw $($errorNode.'#text')
-            } else {
+            }
+            else {
                 throw 'An error occurred, but no error details were found in the response.'
             }
         }
-    } catch {
+    }
+    catch {
+        $PSCmdlet.ThrowTerminatingError($_)
+    }
+}
+
+function Invoke-PynterAllEmployeesSOAPRequest {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string]
+        $Uri,
+
+
+        [Parameter(Mandatory)]
+        [string]
+        $Body,
+
+        [Parameter(Mandatory)]
+        [string]
+        $Method
+    )
+
+    try {
+        $splatParams = @{
+            Uri         = $Uri
+            Body        = $Body
+            Method      = $Method
+            ContentType = 'application/soap+xml; charset=utf-8'
+        }
+        [xml]$xmlResponse = Invoke-RestMethod @splatParams
+        $success = $xmlResponse.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Success']")
+        if ($($success.'#text') -eq 'true') {
+            $contentsNode = $xmlResponse.SelectNodes("//*[local-name()='Body']//*[local-name()='Contents']//*[local-name()='BasicPersonInfo']")
+            $employees = [System.Collections.Generic.List[PSCustomObject]]::new() 
+
+            foreach ($node in $contentsNode) {
+                $employeeObj = [PSCustomObject]@{}
+                foreach ($childnode in $node.ChildNodes) {
+                    $employeeObj | Add-Member -MemberType NoteProperty -Name $childnode.LocalName -Value $childnode.InnerText
+                }
+                $employees.Add($employeeObj)
+            }
+
+            Write-Output $employees
+        }
+        elseif ($($success.'#text') -eq 'false') {
+            $errorNode = $xmlResponse.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Error']")
+            if ($null -ne $errorNode) {
+                throw $($errorNode.'#text')
+            }
+            else {
+                throw 'An error occurred, but no error details were found in the response.'
+            }
+        }
+    }
+    catch {
         $PSCmdlet.ThrowTerminatingError($_)
     }
 }
 #endregion
 
 try {
-    # Verify if [aRef] has a value
-    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
-        throw 'The account reference could not be found'
+    # Create GetAllBasicPersonInfo XML body
+    # https://{customer}.pynter.nl/service/apiservice.asmx?op=GetAllBasicPersonInfo
+    Write-Information 'Creating GetAllBasicPersonInfo Xml body'
+    $splatAllBasicPersonInforXmlBody = @{
+        SoapMethod = 'GetAllBasicPersonInfo'    
+        Parameters = @{}        
     }
-
-    Write-Information 'Verifying if a Pynter account exists'
-    # Create GetPersonByExternalId XML body
-    # https://{customer}.pynter.nl/service/apiservice.asmx?op=GetPersonByPynterId
-    $splatGetPersonByPynterIdXmlBody = @{
-        SoapMethod = 'GetPersonByPynterId'
-        Parameters = @{ pynterPersonId = $actionContext.References.Account }
-    }
-    $getPersonByPynterIdXmlBody = New-PynterSoapXmlBody @splatGetPersonByPynterIdXmlBody
+    $getAllBasicPersonInfoXmlBody = New-PynterSoapXmlBody @splatAllBasicPersonInforXmlBody
+    
     try {
         $splatGetUserParams = @{
             Uri    = "$($actionContext.configuration.BaseUrl)/service/apiService.asmx"
-            Body   = $getPersonByPynterIdXmlBody
+            Body   = $getAllBasicPersonInfoXmlBody
             Method = 'POST'
         }
-        $correlatedAccount = Invoke-PynterSOAPRequest @splatGetUserParams
-        $outputContext.PreviousData = $correlatedAccount
-    } catch {
-        if ($_.Exception.Message -eq 'Person not found.'){
-            $correlatedAccount = $null
-        } else {
+        $importedAccounts = Invoke-PynterAllEmployeesSOAPRequest @splatGetUserParams        
+    }
+    catch {
+        if ($_.Exception.Message -eq 'Persons not found.') {
+            $importedAccounts = $null
+        }
+        else {
             throw
         }
-    }
+    }    
 
-    if ($null -ne $correlatedAccount) {
-        $action = 'DeleteAccount'
-    } else {
-        $action = 'NotFound'
-    }
+    Write-Information 'Starting account data import'
+    
+    # Map the imported data to the account field mappings
+    foreach ($importedAccount in $importedAccounts) {
 
-    # Process
-    switch ($action) {
-        'DeleteAccount' {
-            Write-Information "Deleting Pynter account with accountReference: [$($actionContext.References.Account)]"
-             ##To clear all fields except mandatory##
-            <#$accountDeleteObject = [PSCustomObject]@{
-                FirstName = $correlatedAccount.FirstName
-                FamilyName = $correlatedAccount.FamilyName
-                Email = $correlatedAccount.Email
-                ExternalIdentifier = $correlatedAccount.ExternalIdentifier
-                ManagerExternalIdentifier = $correlatedAccount.ManagerExternalIdentifier
-                Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-            }#>
+        $splatGetPersonByPynterIdXmlBody = @{
+            SoapMethod = 'GetPersonByPynterId'
+            Parameters = @{ pynterPersonId = $importedAccount.PynterId }
+        }
+        $getPersonByPynterIdXmlBody = New-PynterSoapXmlBody @splatGetPersonByPynterIdXmlBody
 
-            ##To keep current fieldvalues and only update necessary##
-            $accountDeleteObject = $correlatedAccount
-            $accountDeleteObject.Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-
-            # Create UpdatePerson XML body
-            # https://{customer}.pynter.nl/service/apiservice.asmx?op=UpdatePerson
-            Write-Information 'Creating UpdatePerson Xml body'
-            $splatUpdatePersonXmlBody = @{
-                SoapMethod = 'UpdatePerson'
-                Parameters = @{ pynterPersonId = $actionContext.References.Account; personUpdate = $accountDeleteObject }
-            }
-            $updatePersonXmlBody = New-PynterSoapXmlBody @splatUpdatePersonXmlBody
-
-            if (-not($actionContext.DryRun -eq $true)) {
-                $splatUpdatePersonRequest = @{
-                    Uri    = "$($actionContext.configuration.BaseUrl)/service/apiService.asmx"
-                    Body   = $updatePersonXmlBody
-                    Method = 'POST'
-                }
-                $null = Invoke-PynterSOAPRequest @splatUpdatePersonRequest
-            } else {
-                Write-Information "[DryRun] Delete Pynter account with accountReference: [$($actionContext.References.Account)], will be executed during enforcement"
+        try {
+            $splatGetUserParams = @{
+                Uri    = "$($actionContext.configuration.BaseUrl)/service/apiService.asmx"
+                Body   = $getPersonByPynterIdXmlBody
+                Method = 'POST'
             }
 
-            $outputContext.Success = $true
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = 'Delete account was successful'
-                    IsError = $false
-                })
-            break
+            $correlatedAccount = Invoke-PynterSOAPRequest @splatGetUserParams            
         }
+        catch {
+            if ($_.Exception.Message -eq 'Person not found.') {
+                $correlatedAccount = $null
+            }
+            else {
+                throw
+            }       
+        }
+        
+        if ($null -ne $correlatedAccount) {            
+            $surName = if (!([string]::IsNullOrEmpty($correlatedAccount.insertion))) { $correlatedAccount.insertion + ' ' + $correlatedAccount.familyname } else { $importedAccount.familyname }
+            $displayName = $correlatedAccount.firstname + ' ' + $surName
 
-        'NotFound' {
-            Write-Information "Pynter account: [$($actionContext.References.Account)] could not be found, possibly indicating that it could be deleted"
-            $outputContext.Success = $true
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "Pynter account: [$($actionContext.References.Account)] could not be found, possibly indicating that it could be deleted"
-                    IsError = $false
-                })
-            break
+            if ([string]::IsNullOrEmpty($correlatedAccount.Email)) {
+                $correlatedAccount.Email = $correlatedAccount.Id
+            }
+            
+            Write-Output @{
+                AccountReference = $correlatedAccount.Id
+                DisplayName      = $displayName
+                UserName         = $correlatedAccount.Email
+                Enabled          = if ($correlatedAccount.Blocked -eq 'false') { $true } else { $false }
+                Data             = $correlatedAccount
+            }
         }
     }
-} catch {
+
+    Write-Information 'Account data import completed'
+}
+catch {
     $outputContext.success = $false
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-PynterError -ErrorObject $ex
-        $auditMessage = "Could not delete Pynter account. Error: $($errorObj.FriendlyMessage)"
+        $auditMessage = "Could not create or correlate Pynter account. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-    } else {
-        $auditMessage = "Could not delete Pynter account. Error: $($_.Exception.Message)"
+    }
+    else {
+        $auditMessage = "Could not create or correlate Pynter account. Error: $($ex.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{

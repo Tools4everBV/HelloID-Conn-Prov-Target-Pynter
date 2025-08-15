@@ -3,8 +3,8 @@
 > [!IMPORTANT]
 > This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements.
 
-<p align="center">
-  <img src="https://github.com/Tools4everBV/HelloID-Conn-Prov-Target-Pynter/blob/main/Icon.png?raw=true">
+<p   align = "center">
+<img src   = "https://github.com/Tools4everBV/HelloID-Conn-Prov-Target-Pynter/blob/main/Icon.png?raw=true">
 </p>
 
 ## Table of contents
@@ -32,17 +32,38 @@
 
 _HelloID-Conn-Prov-Target-Pynter_ is a _target_ connector. _Pynter_ provides a set of SOAP APIs that allow you to programmatically interact with its data. These APIs use XML-based requests and responses, following the SOAP protocol for structured communication.
 
+## Supported features
+
+The following features are available:
+
+| Feature                             | Supported | Actions                         | Remarks                                                                      |
+| ----------------------------------- | --------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| **Account Lifecycle**               | ✅        | Create, Update, Enable, Disable |                                                                              |
+| **Permissions**                     | ✅        | Grant, Revoke                   | All available accountlevels except 'User', cause this a default accountlevel |
+| **Resources**                       | ❌        | -                               |                                                                              |
+| **Entitlement Import: Accounts**    | ✅        | -                               |                                                                              |
+| **Entitlement Import: Permissions** | ✅        | -                               | All available accountlevels except 'User', cause this a default accountlevel |
+
 ## Getting started
+
+### HelloID Agent
+
+> [!WARNING]
+> Currently it is necessary to use a HelloID agent. Due to issues with a specific issuer of the root certificate used by the webservice, the connector doesn't work with the HelloID cloud.
+
+### Session concurrency
+
+Within each event the Pynter endpoints expect the complete account object. Therefore to ensure that events do not interfere with each other, it's necessary to set concurrent actions to 1 for the connector.
 
 ### Connection settings
 
 The following settings are required to connect to the API.
 
-| Setting                   | Description                                                                          | Mandatory |
-| ------------------------- | ------------------------------------------------------------------------------------ | --------- |
-| UserName                  | The UserName to connect to the API                                                   | Yes       |
-| Password                  | The Password to connect to the API                                                   | Yes       |
-| BaseUrl                   | The URL to the API                                                                   | Yes       |
+| Setting  | Description                        | Mandatory |
+| -------- | ---------------------------------- | --------- |
+| UserName | The UserName to connect to the API | Yes       |
+| Password | The Password to connect to the API | Yes       |
+| BaseUrl  | The URL to the API                 | Yes       |
 
 ### Correlation configuration
 
@@ -54,22 +75,25 @@ The correlation configuration is used to specify which properties will be used t
 | Person correlation field  | `ExternalId`         |
 | Account correlation field | `ExternalIdentifier` |
 
-> [!TIP]
-> _For more information on correlation, please refer to our correlation [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems/correlation.html) pages_.
+> [!TIP] > _For more information on correlation, please refer to our correlation [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems/correlation.html) pages_.
 
 ### Available lifecycle actions
 
 The following lifecycle actions are available:
 
-| Action             | Description                                                                     |
-| ------------------ | ------------------------------------------------------------------------------- |
-| create.ps1         | Creates a new account.                                                          |
-| delete.ps1         | Removes an existing account or entity.                                          |
-| disable.ps1        | Disables an account, preventing access without permanent removal.               |
-| enable.ps1         | Enables an account, granting access.                                            |
-| update.ps1         | Updates the attributes of an account.                                           |
-| configuration.json | Contains the connection settings and general configuration for the connector.   |
-| fieldMapping.json  | Defines mappings between person fields and target system person account fields. |
+| Action               | Description                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| create.ps1           | Creates a new account.                                                                 |
+| delete.ps1           | Removes an existing account entitlement. Account in target won't be deleted.           |
+| disable.ps1          | Disables an account, preventing access without permanent removal.                      |
+| enable.ps1           | Enables an account, granting access.                                                   |
+| update.ps1           | Updates the attributes of an account.                                                  |
+| grantPermission.ps1  | Sets the accountlevel for an account.                                                  |
+| revokePermission.ps1 | Revokes the accountlevel of an account and sets it to default 'User'.                  |
+| import.ps1           | Imports existing entitlements for configured entitlements in business rules.           |
+| importPermission.ps1 | Imports existing permission entitlements for configured entitlements in business rules |
+| configuration.json   | Contains the connection settings and general configuration for the connector.          |
+| fieldMapping.json    | Defines mappings between person fields and target system person account fields.        |
 
 ### Field mapping
 
@@ -105,17 +129,17 @@ New-PynterSoapXmlBody @splatGetPersonByExternalIdXmlBody
 This will result in the following SOAP envelope:
 
 ```xml
-<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-    xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
-    <soap12:Body>
-        <GetPersonByExternalId xmlns="http://tempuri.org/">
+<soap12: Envelope xmlns: xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns  : xsd="http://www.w3.org/2001/XMLSchema"
+xmlns  : soap12="http://www.w3.org/2003/05/soap-envelope">
+<soap12: Body>
+        <GetPersonByExternalId xmlns = "http://tempuri.org/">
             <username>MyUserName</username>
             <password>MyPassword</password>
             <externalId>123456</externalId>
         </GetPersonByExternalId>
-    </soap12:Body>
-</soap12:Envelope>
+</soap12: Body>
+</soap12: Envelope>
 ```
 
 - **username** and **password** are automatically derived from `actionContext.Configuration`, ensuring authentication.
@@ -127,7 +151,7 @@ The fields: `FirstName`, `FamilyName`, `ExternalIdentifier`, and `Email` must al
 
 #### Compare logic within the _update_ lifecycle action
 
-The _update_ lifecycle action does contain our standard compare logic. However, contrary to the documentation, its worth to note that; even though properties are compared and changed properties are logged, __ALL__ properties will be updated.
+The _update_ lifecycle action does contain our standard compare logic. However, contrary to the documentation, its worth to note that; even though properties are compared and changed properties are logged, **ALL** properties will be updated.
 
 ## Development resources
 
@@ -143,11 +167,9 @@ The following endpoints are used by the connector
 
 ## Getting help
 
-> [!TIP]
-> _For more information on how to configure a HelloID PowerShell connector, please refer to our [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems.html) pages_.
+> [!TIP] > _For more information on how to configure a HelloID PowerShell connector, please refer to our [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems.html) pages_.
 
-> [!TIP]
->  _If you need help, feel free to ask questions on our [forum](https://forum.helloid.com)_.
+> [!TIP] > _If you need help, feel free to ask questions on our [forum](https://forum.helloid.com)_.
 
 ## HelloID docs
 

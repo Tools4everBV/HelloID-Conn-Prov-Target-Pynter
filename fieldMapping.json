@@ -93,10 +93,11 @@
       "MappingActions": [
         {
           "MapForActions": [
-            "Create"
+            "Create",
+            "Update"
           ],
-          "MappingMode": "Field",
-          "Value": "\"Person.PrimaryContract.EndDate\"",
+          "MappingMode": "Complex",
+          "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate();\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n    let originalDate = Person.PrimaryContract.EndDate;\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         },
@@ -106,7 +107,7 @@
             "Delete"
           ],
           "MappingMode": "Complex",
-          "Value": "\"function getCurrentDate() {\\r\\n    return new Date();\\r\\n}\\r\\n\\r\\ngetCurrentDate();\"",
+          "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate()+1;\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n    let originalDate = new Date();\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -119,10 +120,11 @@
       "MappingActions": [
         {
           "MapForActions": [
-            "Create"
+            "Create",
+            "Update"
           ],
-          "MappingMode": "Field",
-          "Value": "\"Person.PrimaryContract.StartDate\"",
+          "MappingMode": "Complex",
+          "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate();\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n   let originalDate = Person.PrimaryContract.StartDate;\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -216,11 +218,10 @@
         {
           "MapForActions": [
             "Create",
-            "Update",
-            "Enable"
+            "Update"
           ],
           "MappingMode": "Complex",
-          "Value": "\"function getEmail() {\\r\\n    let mail = '';\\r\\n    if (typeof Person.Accounts._32540d3ab2bd4dd2ad9fde1cf822f963.mail !== 'undefined' && Person.Accounts._32540d3ab2bd4dd2ad9fde1cf822f963.mail) {\\r\\n        mail = Person.Accounts._32540d3ab2bd4dd2ad9fde1cf822f963.mail;\\r\\n    }\\r\\n    return mail;\\r\\n}\\r\\ngetEmail()\"",
+          "Value": "\"function getEmail() {\\r\\n    let mail = '';\\r\\n    //if (typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {\\r\\n    //    mail = Person.Accounts.MicrosoftActiveDirectory.mail;\\r\\n    //}\\r\\n    //return mail;\\r\\n    return 'tom.debreed@patyna.nl'\\r\\n}\\r\\ngetEmail()\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
