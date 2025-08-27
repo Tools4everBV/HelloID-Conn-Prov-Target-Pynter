@@ -75,7 +75,8 @@ The correlation configuration is used to specify which properties will be used t
 | Person correlation field  | `ExternalId`         |
 | Account correlation field | `ExternalIdentifier` |
 
-> [!TIP] > _For more information on correlation, please refer to our correlation [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems/correlation.html) pages_.
+> [!TIP]
+> _For more information on correlation, please refer to our correlation [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems/correlation.html) pages_.
 
 ### Available lifecycle actions
 
@@ -167,9 +168,11 @@ The following endpoints are used by the connector
 
 ## Getting help
 
-> [!TIP] > _For more information on how to configure a HelloID PowerShell connector, please refer to our [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems.html) pages_.
+> [!TIP]
+> _For more information on how to configure a HelloID PowerShell connector, please refer to our [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems.html) pages_.
 
-> [!TIP] > _If you need help, feel free to ask questions on our [forum](https://forum.helloid.com)_.
+> [!TIP]
+> _If you need help, feel free to ask questions on our [forum](https://forum.helloid.com)_.
 
 ## HelloID docs
 
