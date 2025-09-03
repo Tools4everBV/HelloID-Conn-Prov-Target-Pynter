@@ -7,10 +7,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
           "Value": "\"Person.PrimaryContract.CostCenter.Name\"",
           "UsedInNotifications": false,
@@ -24,10 +21,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
           "Value": "\"Person.PrimaryContract.Organization.Name\"",
           "UsedInNotifications": false,
@@ -41,10 +35,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
           "Value": "\"Person.PrimaryContract.Title.Name\"",
           "UsedInNotifications": false,
@@ -58,12 +49,9 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
-          "Value": "\"Person.Name.FamilyNamePrefix\"",
+          "Value": "\"// Please enter the mapping logic to generate the SurName based on name convention.\\r\\nfunction generateInsertion() {\\r\\n\\tlet middleName = Person.Name.FamilyNamePrefix;\\r\\n\\tlet middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n\\tlet nameFormatted = \\\"\\\"\\r\\n\\r\\n\\tswitch(Person.Name.Convention) {\\r\\n\\t\\tcase 'B':\\r\\n\\t\\t\\tif (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted  + middleName }\\t\\t\\t\\r\\n\\t\\t\\tbreak;\\r\\n\\t\\tcase 'BP':\\r\\n\\t\\t\\tif (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted  + middleName }\\t\\t\\t\\r\\n\\t\\t\\tbreak;\\r\\n\\t\\tcase 'P':\\r\\n\\t\\t\\tif (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted + middleNamePartner }\\t\\t\\t\\r\\n\\t\\t\\tbreak;\\r\\n\\t\\tcase 'PB':\\r\\n\\t\\t\\tif (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted  + middleNamePartner }\\r\\n\\t\\t\\tbreak;\\r\\n\\r\\n\\t\\tdefault:\\r\\n\\t\\t\\tif (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted + middleName }\\r\\n\\t\\t\\tbreak;\\r\\n\\t}\\r\\n\\tconst insertion = nameFormatted;\\r\\n\\r\\n\\treturn insertion;\\r\\n}\\r\\n\\r\\ngenerateInsertion();\\r\\n\\r\\n\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -75,10 +63,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
           "Value": "\"Person.Contact.Business.Phone.Mobile\"",
           "UsedInNotifications": false,
@@ -92,22 +77,16 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Complex",
           "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate();\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n    let originalDate = Person.PrimaryContract.EndDate;\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         },
         {
-          "MapForActions": [
-            "Disable",
-            "Delete"
-          ],
+          "MapForActions": ["Disable", "Delete"],
           "MappingMode": "Complex",
-          "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate()+1;\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n    let originalDate = new Date();\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
+          "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate();\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n    let originalDate = new Date();\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -119,10 +98,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Complex",
           "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate();\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n   let originalDate = Person.PrimaryContract.StartDate;\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
           "UsedInNotifications": false,
@@ -136,10 +112,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
           "Value": "\"Person.PrimaryContract.Manager.ExternalId\"",
           "UsedInNotifications": false,
@@ -153,20 +126,14 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Enable"
-          ],
+          "MapForActions": ["Enable"],
           "MappingMode": "Fixed",
           "Value": "\"False\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         },
         {
-          "MapForActions": [
-            "Disable",
-            "Delete",
-            "Create"
-          ],
+          "MapForActions": ["Create", "Disable"],
           "MappingMode": "Fixed",
           "Value": "\"True\"",
           "UsedInNotifications": false,
@@ -180,11 +147,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update",
-            "Enable"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
           "Value": "\"Person.Name.NickName\"",
           "UsedInNotifications": false,
@@ -198,13 +161,9 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update",
-            "Enable"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Field",
-          "Value": "\"Person.Name.FamilyName\"",
+          "Value": "\"// Please enter the mapping logic to generate the SurName based on name convention.\\r\\nfunction generateSurName() {\\r\\n\\tlet firstName = Person.Name.NickName;\\r\\n\\tlet middleName = Person.Name.FamilyNamePrefix;\\r\\n\\tlet lastName = Person.Name.FamilyName;\\r\\n\\tlet middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n\\tlet lastNamePartner = Person.Name.FamilyNamePartner;\\r\\n\\tlet nameFormatted = \\\"\\\"\\r\\n\\r\\n\\tswitch(Person.Name.Convention) {\\r\\n\\t\\tcase 'B':\\r\\n\\t\\t\\t//if (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted  + middleName + ' ' }\\r\\n\\t\\t\\tnameFormatted = nameFormatted  + lastName;\\r\\n\\t\\t\\tbreak;\\r\\n\\t\\tcase 'BP':\\r\\n\\t\\t\\t//if (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted  + middleName + ' '}\\r\\n\\t\\t\\tnameFormatted = nameFormatted  + lastName;\\r\\n\\t\\t\\tnameFormatted = nameFormatted + ' -'\\r\\n\\t\\t\\tif (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted + ' ' + middleNamePartner }\\r\\n\\t\\t\\tnameFormatted = nameFormatted + ' ' + lastNamePartner;\\r\\n\\t\\t\\tbreak;\\r\\n\\t\\tcase 'P':\\r\\n\\t\\t\\t//if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted + middleNamePartner + ' '  }\\r\\n\\t\\t\\tnameFormatted = nameFormatted + lastNamePartner;\\r\\n\\t\\t\\tbreak;\\r\\n\\t\\tcase 'PB':\\r\\n\\t\\t\\t//if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted  + middleNamePartner + ' '  }\\r\\n\\t\\t\\tnameFormatted = nameFormatted + lastNamePartner;\\r\\n\\t\\t\\tnameFormatted = nameFormatted + ' -'\\r\\n\\t\\t\\tif (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted + ' ' + middleName }\\r\\n\\t\\t\\tnameFormatted = nameFormatted + ' ' + lastName;\\r\\n\\t\\t\\tbreak;\\r\\n\\r\\n\\t\\tdefault:\\r\\n\\t\\t\\t//if (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted + middleName + ' '  }\\r\\n\\t\\t\\tnameFormatted = nameFormatted + lastName;\\r\\n\\t\\t\\tbreak;\\r\\n\\t}\\r\\n\\tconst surName = nameFormatted;\\r\\n\\r\\n\\treturn surName;\\r\\n}\\r\\n\\r\\ngenerateSurName();\\r\\n\\r\\n\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -216,10 +175,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
+          "MapForActions": ["Create", "Update"],
           "MappingMode": "Complex",
           "Value": "\"function getEmail() {\\r\\n    let mail = '';\\r\\n    if (typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {\\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail;\\r\\n    }\\r\\n    return mail;    \\r\\n}\\r\\ngetEmail()\"",
           "UsedInNotifications": false,
@@ -233,11 +189,7 @@
       "Type": "Text",
       "MappingActions": [
         {
-          "MapForActions": [
-            "Create",
-            "Update",
-            "Enable"
-          ],
+          "MapForActions": ["Create", "Update", "Enable"],
           "MappingMode": "Field",
           "Value": "\"Person.ExternalId\"",
           "UsedInNotifications": false,

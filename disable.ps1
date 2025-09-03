@@ -23,7 +23,8 @@ function Resolve-PynterError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -34,10 +35,11 @@ function Resolve-PynterError {
         try {
             $errorDetailsObject = [xml]($httpErrorObj.ErrorDetails)
             $errorNode = $errorDetailsObject.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Fault']")
-            if ($errorNode.Reason){
+            if ($errorNode.Reason) {
                 $httpErrorObj.FriendlyMessage = $errorNode.Reason.Text.'#text'
             }
-        } catch {
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $_.Exception.Message
         }
         Write-Output $httpErrorObj
@@ -81,26 +83,30 @@ function New-PynterSoapXmlBody {
                 foreach ($prop in $Parameters[$key].PSObject.Properties) {
                     $subNode = $xml.CreateElement($prop.Name, $namespace)
                     $value = $prop.Value
-                    if (-not[string]::IsNullOrEmpty($value)){
+                    if (-not[string]::IsNullOrEmpty($value)) {
                         if ($prop.Name -eq "contractStartTime" -or $prop.Name -eq "contractEndTime") {
                             $dateValue = [datetime]$value
                             $subNode.SetAttribute('xsi:type', 'xsd:dateTime')
                             $subNode.InnerText = $dateValue.ToString("yyyy-MM-ddTHH:mm:ss")
-                        } elseif ($value -is [bool]) {
+                        }
+                        elseif ($value -is [bool]) {
                             $subNode.SetAttribute('xsi:type', 'xsd:boolean')
                             $subNode.InnerText = $value.ToString().ToLower()
-                        } else {
+                        }
+                        else {
                             $subNode.InnerText = $value
                         }
                         $null = $paramNode.AppendChild($subNode)
                     }
                 }
-            } else {
+            }
+            else {
                 $value = $Parameters[$key]
                 if ($value -is [bool]) {
                     $paramNode.SetAttribute('xsi:type', 'xsd:boolean')
                     $paramNode.InnerText = $value.ToString().ToLower()
-                } else {
+                }
+                else {
                     $paramNode.InnerText = $value
                 }
             }
@@ -112,7 +118,8 @@ function New-PynterSoapXmlBody {
         $null = $xml.AppendChild($envelope)
 
         Write-Output $xml.OuterXml
-    } catch {
+    }
+    catch {
         $PSCmdlet.ThrowTerminatingError($_)
     }
 }
@@ -152,15 +159,18 @@ function Invoke-PynterSOAPRequest {
                 }
                 Write-Output $obj
             }
-        } elseif ($($success.'#text') -eq 'false') {
+        }
+        elseif ($($success.'#text') -eq 'false') {
             $errorNode = $xmlResponse.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Error']")
             if ($null -ne $errorNode) {
                 throw $($errorNode.'#text')
-            } else {
+            }
+            else {
                 throw 'An error occurred, but no error details were found in the response.'
             }
         }
-    } catch {
+    }
+    catch {
         $PSCmdlet.ThrowTerminatingError($_)
     }
 }
@@ -188,17 +198,20 @@ try {
         }
         $correlatedAccount = Invoke-PynterSOAPRequest @splatGetUserParams
         $outputContext.PreviousData = $correlatedAccount
-    } catch {
-        if ($_.Exception.Message -eq 'Person not found.'){
+    }
+    catch {
+        if ($_.Exception.Message -eq 'Person not found.') {
             $correlatedAccount = $null
-        } else {
+        }
+        else {
             throw
         }
     }
 
     if ($null -ne $correlatedAccount) {
         $action = 'DisableAccount'
-    } else {
+    }
+    else {
         $action = 'NotFound'
     }
 
@@ -220,6 +233,10 @@ try {
             $accountDisableObject = $correlatedAccount
             $accountDisableObject.Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
 
+            <#if (![string]::IsNullOrEmpty($actionContext.Data.ContractEndTime)) {
+                $accountDisableObject | Add-Member -MemberType NoteProperty -Name 'ContractEndTime' -Value $actionContext.Data.ContractEndTime
+            }#>
+
             # Create UpdatePerson XML body
             # https://{customer}.pynter.nl/service/apiservice.asmx?op=UpdatePerson
             Write-Information 'Creating UpdatePerson Xml body'
@@ -236,7 +253,8 @@ try {
                     Method = 'POST'
                 }
                 $null = Invoke-PynterSOAPRequest @splatUpdatePersonRequest
-            } else {
+            }
+            else {
                 Write-Information "[DryRun] Disable Pynter account with accountReference: [$($actionContext.References.Account)], will be executed during enforcement"
             }
 
@@ -258,7 +276,8 @@ try {
             break
         }
     }
-} catch {
+}
+catch {
     $outputContext.success = $false
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
@@ -266,12 +285,13 @@ try {
         $errorObj = Resolve-PynterError -ErrorObject $ex
         $auditMessage = "Could not disable Pynter account. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-    } else {
+    }
+    else {
         $auditMessage = "Could not disable Pynter account. Error: $($_.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{
-        Message = $auditMessage
-        IsError = $true
-    })
+            Message = $auditMessage
+            IsError = $true
+        })
 }
