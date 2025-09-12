@@ -248,6 +248,9 @@ try {
             Method = 'POST'
         }
         $importedAccounts = Invoke-PynterAllEmployeesSOAPRequest @splatGetUserParams        
+
+        # Exclude Pynter system accounts
+        $importedAccounts = $importedAccounts | Where-Object { $_.PSObject.Properties.Name -contains 'ExternalId' } 
     }
     catch {
         if ($_.Exception.Message -eq 'Persons not found.') {
