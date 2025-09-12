@@ -182,6 +182,13 @@ try {
         throw 'The account reference could not be found'
     }
 
+    if ($actionContext.Origin -eq 'reconciliation') {
+        $data = [pscustomobject]@{ 
+            userStatus = @{ Blocked = $true }
+        }
+        $actionContext | Add-Member -MemberType NoteProperty -Name 'data' -Value $data -Force
+    }
+
     Write-Information 'Verifying if a Pynter account exists'
     # Create GetPersonByExternalId XML body
     # https://{customer}.pynter.nl/service/apiservice.asmx?op=GetPersonByPynterId
