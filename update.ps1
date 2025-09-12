@@ -206,8 +206,12 @@ try {
 
             $actionContext.Data.PSObject.Properties | ForEach-Object {
                 if ($null -eq $_.Value) {
-                    $_.Value = ''
-                }
+                    if($correlatedAccount.PSObject.Properties.Name -contains $_.Name){
+                        $_.Value = ''
+                    } else {
+                        $actionContext.Data.PSObject.Properties.Remove($_.Name)
+                    }
+                } 
             }
         
         # Maintain current Pynter AccountLevel
