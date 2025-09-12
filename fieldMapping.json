@@ -84,7 +84,7 @@
           "StoreInAccountData": false
         },
         {
-          "MapForActions": ["Disable", "Delete"],
+          "MapForActions": ["Delete"],
           "MappingMode": "Complex",
           "Value": "\"function convertDate(date) {\\r\\n    let day = date.getDate();\\r\\n    day = day < 10 ? \\\"0\\\" + day : day;\\r\\n    let month = date.getMonth() + 1;\\r\\n    month = month < 10 ? \\\"0\\\" + month : month;\\r\\n    let year = date.getFullYear();\\r\\n    return year + \\\"-\\\" + month + \\\"-\\\" + day + \\\"T00:00:00\\\";    \\r\\n}\\r\\n\\r\\nfunction getValue() {\\r\\n    let originalDate = new Date();\\r\\n    let newDate = \\\"\\\"\\r\\n    if (originalDate) {\\r\\n        const date = new Date(originalDate);\\r\\n        newDate = convertDate(date);\\r\\n    } \\r\\n    return newDate;\\r\\n}\\r\\n\\r\\ngetValue();\"",
           "UsedInNotifications": false,
