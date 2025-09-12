@@ -102,6 +102,10 @@ The field mapping can be imported by using the _fieldMapping.json_ file.
 
 ## Remarks
 
+### Permissions
+> [!WARNING]
+> Be aware only one accountlevel can be assigned, so business rules must be set up so users can only get one accountlevel. If a user falls within the conditions of multiple business rules the last granted entitlement will determine the accountlevel.
+
 ### Namespace
 
 Currently the function `New-PynterSoapXmlBody` uses a default namespace which is set to: `http://tempuri.org/`. This value is usually reserved for development environemts only. For production environments, the value of the namespace might be subject to change. Make sure to verify and update this accordingly during the first implementation.
