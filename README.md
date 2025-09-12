@@ -18,6 +18,7 @@
     - [Available lifecycle actions](#available-lifecycle-actions)
     - [Field mapping](#field-mapping)
   - [Remarks](#remarks)
+    - [Permissions](#permissions)
     - [Namespace](#namespace)
     - [Dynamic SOAP envelope derived from fieldMapping](#dynamic-soap-envelope-derived-from-fieldmapping)
       - [Example SOAP envelope for `GetPersonByExternalId`](#example-soap-envelope-for-getpersonbyexternalid)
