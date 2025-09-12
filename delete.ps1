@@ -182,6 +182,14 @@ try {
         throw 'The account reference could not be found'
     }
 
+    if ($actionContext.Origin -eq 'reconciliation') {
+        $dateTo = Get-Date -Format "yyyy-MM-ddT00:00:00"
+        $data = [pscustomobject]@{ 
+            userStatus = @{ ContractEndTime = $dateTo }
+        }
+        $actionContext | Add-Member -MemberType NoteProperty -Name 'data' -Value $data -Force
+    }
+
     Write-Information 'Verifying if a Pynter account exists'
     # Create GetPersonByExternalId XML body
     # https://{customer}.pynter.nl/service/apiservice.asmx?op=GetPersonByPynterId
