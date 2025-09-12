@@ -209,6 +209,9 @@ try {
                     $_.Value = ''
                 }
             }
+        
+        # Maintain current Pynter AccountLevel
+        $actionContext.Data | Add-Member -MemberType 'NoteProperty' -Name 'AccountLevel' -Value $correlatedAccount.AccountLevel
 
         $splatCompareProperties = @{
             ReferenceObject  = @($correlatedAccount.PSObject.Properties)
