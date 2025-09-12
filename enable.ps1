@@ -206,13 +206,9 @@ try {
     switch ($action) {
         'EnableAccount' {
             Write-Information "Enabling Pynter account with accountReference: [$($actionContext.References.Account)]"
-            $accountEnableObject = [PSCustomObject]@{
-                FirstName = $correlatedAccount.FirstName
-                FamilyName = $correlatedAccount.FamilyName
-                Email = $correlatedAccount.Email
-                ExternalIdentifier = $correlatedAccount.ExternalIdentifier
-                Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-            }
+            $accountEnableObject = $correlatedAccount
+            $accountEnableObject.Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
+            $accountEnableObject.ContractEndTime = $actionContext.Data.ContractEndTime
 
             # Create UpdatePerson XML body
             # https://{customer}.pynter.nl/service/apiservice.asmx?op=UpdatePerson

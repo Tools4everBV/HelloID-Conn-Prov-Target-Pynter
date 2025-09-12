@@ -1,7 +1,7 @@
-##################################################
-# HelloID-Conn-Prov-Target-Pynter-Disable
+##############################################################
+# HelloID-Conn-Prov-Target-Pynter-GrantPermission-AccountLevel
 # PowerShell V2
-##################################################
+##############################################################
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -182,13 +182,6 @@ try {
         throw 'The account reference could not be found'
     }
 
-    if ($actionContext.Origin -eq 'reconciliation') {
-        $data = [pscustomobject]@{ 
-            userStatus = @{ Blocked = $true }
-        }
-        $actionContext | Add-Member -MemberType NoteProperty -Name 'data' -Value $data -Force
-    }
-
     Write-Information 'Verifying if a Pynter account exists'
     # Create GetPersonByExternalId XML body
     # https://{customer}.pynter.nl/service/apiservice.asmx?op=GetPersonByPynterId
@@ -203,8 +196,7 @@ try {
             Body   = $getPersonByPynterIdXmlBody
             Method = 'POST'
         }
-        $correlatedAccount = Invoke-PynterSOAPRequest @splatGetUserParams
-        $outputContext.PreviousData = $correlatedAccount
+        $correlatedAccount = Invoke-PynterSOAPRequest @splatGetUserParams        
     }
     catch {
         if ($_.Exception.Message -eq 'Person not found.') {
@@ -216,7 +208,7 @@ try {
     }
 
     if ($null -ne $correlatedAccount) {
-        $action = 'DisableAccount'
+        $action = 'GrantPermission'
     }
     else {
         $action = 'NotFound'
@@ -224,36 +216,21 @@ try {
 
     # Process
     switch ($action) {
-        'DisableAccount' {
-            Write-Information "Disabling Pynter account with accountReference: [$($actionContext.References.Account)]"
-            ##To clear all fields except mandatory##
-            <#$accountDisableObject = [PSCustomObject]@{
-                FirstName = $correlatedAccount.FirstName
-                FamilyName = $correlatedAccount.FamilyName
-                Email = $correlatedAccount.Email
-                ExternalIdentifier = $correlatedAccount.ExternalIdentifier
-                ManagerExternalIdentifier = $correlatedAccount.ManagerExternalIdentifier
-                Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-            }#>
-
-            ##To keep current fieldvalues and only update necessary##
-            $accountDisableObject = $correlatedAccount
-            $accountDisableObject.Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-
-            <#if (![string]::IsNullOrEmpty($actionContext.Data.ContractEndTime)) {
-                $accountDisableObject | Add-Member -MemberType NoteProperty -Name 'ContractEndTime' -Value $actionContext.Data.ContractEndTime
-            }#>
+        'GrantPermission' {
+            $personUpdateObject = $correlatedAccount
+            $personUpdateObject.AccountLevel = $actionContext.References.Permission.Reference
 
             # Create UpdatePerson XML body
             # https://{customer}.pynter.nl/service/apiservice.asmx?op=UpdatePerson
             Write-Information 'Creating UpdatePerson Xml body'
             $splatUpdatePersonXmlBody = @{
                 SoapMethod = 'UpdatePerson'
-                Parameters = @{ pynterPersonId = $actionContext.References.Account; personUpdate = $accountDisableObject }
+                Parameters = @{ pynterPersonId = $actionContext.References.Account; personUpdate = $personUpdateObject }                
             }
             $updatePersonXmlBody = New-PynterSoapXmlBody @splatUpdatePersonXmlBody
 
             if (-not($actionContext.DryRun -eq $true)) {
+                Write-Information "Granting Pynter permission: [$($actionContext.PermissionDisplayName)] - [$($actionContext.References.Permission.Reference)]"
                 $splatUpdatePersonRequest = @{
                     Uri    = "$($actionContext.configuration.BaseUrl)/service/apiService.asmx"
                     Body   = $updatePersonXmlBody
@@ -262,12 +239,13 @@ try {
                 $null = Invoke-PynterSOAPRequest @splatUpdatePersonRequest
             }
             else {
-                Write-Information "[DryRun] Disable Pynter account with accountReference: [$($actionContext.References.Account)], will be executed during enforcement"
+                Write-Information "[DryRun] Grant Pynter permission: [$($actionContext.PermissionDisplayName)] - [$($actionContext.References.Permission.Reference)], will be executed during enforcement"
             }
 
             $outputContext.Success = $true
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = 'Disable account was successful'
+                    Action  = $action
+                    Message = "Grant permission [$($actionContext.PermissionDisplayName)] was successfully"
                     IsError = $false
                 })
             break
@@ -275,14 +253,15 @@ try {
 
         'NotFound' {
             Write-Information "Pynter account: [$($actionContext.References.Account)] could not be found, possibly indicating that it could be deleted"
-            $outputContext.Success = $true
+            $outputContext.Success = $false
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Message = "Pynter account: [$($actionContext.References.Account)] could not be found, possibly indicating that it could be deleted"
-                    IsError = $false
+                    IsError = $true
                 })
             break
         }
     }
+
 }
 catch {
     $outputContext.success = $false
@@ -290,11 +269,11 @@ catch {
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-PynterError -ErrorObject $ex
-        $auditMessage = "Could not disable Pynter account. Error: $($errorObj.FriendlyMessage)"
+        $auditMessage = "Could not grant Pynter permission. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditMessage = "Could not disable Pynter account. Error: $($_.Exception.Message)"
+        $auditMessage = "Could not grant Pynter permission. Error: $($_.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{

@@ -1,7 +1,7 @@
-##################################################
-# HelloID-Conn-Prov-Target-Pynter-Disable
+#################################################
+# HelloID-Conn-Prov-Target-Pynter-Import-Permissions
 # PowerShell V2
-##################################################
+#################################################
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -174,115 +174,118 @@ function Invoke-PynterSOAPRequest {
         $PSCmdlet.ThrowTerminatingError($_)
     }
 }
-#endregion
 
-try {
-    # Verify if [aRef] has a value
-    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
-        throw 'The account reference could not be found'
-    }
+function Invoke-PynterAllEmployeesSOAPRequest {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string]
+        $Uri,
 
-    if ($actionContext.Origin -eq 'reconciliation') {
-        $data = [pscustomobject]@{ 
-            userStatus = @{ Blocked = $true }
-        }
-        $actionContext | Add-Member -MemberType NoteProperty -Name 'data' -Value $data -Force
-    }
 
-    Write-Information 'Verifying if a Pynter account exists'
-    # Create GetPersonByExternalId XML body
-    # https://{customer}.pynter.nl/service/apiservice.asmx?op=GetPersonByPynterId
-    $splatGetPersonByPynterIdXmlBody = @{
-        SoapMethod = 'GetPersonByPynterId'
-        Parameters = @{ pynterPersonId = $actionContext.References.Account }
-    }
-    $getPersonByPynterIdXmlBody = New-PynterSoapXmlBody @splatGetPersonByPynterIdXmlBody
+        [Parameter(Mandatory)]
+        [string]
+        $Body,
+
+        [Parameter(Mandatory)]
+        [string]
+        $Method
+    )
+
     try {
-        $splatGetUserParams = @{
-            Uri    = "$($actionContext.configuration.BaseUrl)/service/apiService.asmx"
-            Body   = $getPersonByPynterIdXmlBody
-            Method = 'POST'
+        $splatParams = @{
+            Uri         = $Uri
+            Body        = $Body
+            Method      = $Method
+            ContentType = 'application/soap+xml; charset=utf-8'
         }
-        $correlatedAccount = Invoke-PynterSOAPRequest @splatGetUserParams
-        $outputContext.PreviousData = $correlatedAccount
+        [xml]$xmlResponse = Invoke-RestMethod @splatParams
+        $success = $xmlResponse.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Success']")
+        if ($($success.'#text') -eq 'true') {
+            $contentsNode = $xmlResponse.SelectNodes("//*[local-name()='Body']//*[local-name()='Contents']//*[local-name()='BasicPersonInfo']")
+            $employees = [System.Collections.Generic.List[PSCustomObject]]::new() 
+
+            foreach ($node in $contentsNode) {
+                $employeeObj = [PSCustomObject]@{}
+                foreach ($childnode in $node.ChildNodes) {
+                    $employeeObj | Add-Member -MemberType NoteProperty -Name $childnode.LocalName -Value $childnode.InnerText
+                }
+                $employees.Add($employeeObj)
+            }
+
+            Write-Output $employees
+        }
+        elseif ($($success.'#text') -eq 'false') {
+            $errorNode = $xmlResponse.SelectSingleNode("//*[local-name()='Body']//*[local-name()='Error']")
+            if ($null -ne $errorNode) {
+                throw $($errorNode.'#text')
+            }
+            else {
+                throw 'An error occurred, but no error details were found in the response.'
+            }
+        }
     }
     catch {
-        if ($_.Exception.Message -eq 'Person not found.') {
-            $correlatedAccount = $null
+        $PSCmdlet.ThrowTerminatingError($_)
+    }
+}
+#endregion
+
+try {      
+    Write-Information 'Starting target account permission import'
+
+    Write-Information 'Creating GetAllBasicPersonInfo Xml body'
+    $splatAllBasicPersonInforXmlBody = @{
+        SoapMethod = 'GetAllBasicPersonInfo'    
+        Parameters = @{}        
+    }
+    $getAllBasicPersonInfoXmlBody = New-PynterSoapXmlBody @splatAllBasicPersonInforXmlBody
+    
+    try {
+        $splatGetUserParams = @{
+            Uri    = "$($actionContext.Configuration.BaseUrl)/service/apiService.asmx"
+            Body   = $getAllBasicPersonInfoXmlBody
+            Method = 'POST'
+        }
+        $importedAccounts = Invoke-PynterAllEmployeesSOAPRequest @splatGetUserParams
+
+        # Exclude Pynter system accounts
+        $importedAccounts = $importedAccounts | Where-Object { $_.PSObject.Properties.Name -contains 'ExternalId' } 
+    }
+    catch {
+        if ($_.Exception.Message -eq 'Persons not found.') {
+            $importedAccounts = $null
         }
         else {
             throw
         }
-    }
+    }    
 
-    if ($null -ne $correlatedAccount) {
-        $action = 'DisableAccount'
-    }
-    else {
-        $action = 'NotFound'
-    }
+    $accountLevels = $importedAccounts.AccountLevel | Select-Object -Unique 
 
-    # Process
-    switch ($action) {
-        'DisableAccount' {
-            Write-Information "Disabling Pynter account with accountReference: [$($actionContext.References.Account)]"
-            ##To clear all fields except mandatory##
-            <#$accountDisableObject = [PSCustomObject]@{
-                FirstName = $correlatedAccount.FirstName
-                FamilyName = $correlatedAccount.FamilyName
-                Email = $correlatedAccount.Email
-                ExternalIdentifier = $correlatedAccount.ExternalIdentifier
-                ManagerExternalIdentifier = $correlatedAccount.ManagerExternalIdentifier
-                Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-            }#>
-
-            ##To keep current fieldvalues and only update necessary##
-            $accountDisableObject = $correlatedAccount
-            $accountDisableObject.Blocked = [System.Convert]::ToBoolean($actionContext.Data.Blocked)
-
-            <#if (![string]::IsNullOrEmpty($actionContext.Data.ContractEndTime)) {
-                $accountDisableObject | Add-Member -MemberType NoteProperty -Name 'ContractEndTime' -Value $actionContext.Data.ContractEndTime
-            }#>
-
-            # Create UpdatePerson XML body
-            # https://{customer}.pynter.nl/service/apiservice.asmx?op=UpdatePerson
-            Write-Information 'Creating UpdatePerson Xml body'
-            $splatUpdatePersonXmlBody = @{
-                SoapMethod = 'UpdatePerson'
-                Parameters = @{ pynterPersonId = $actionContext.References.Account; personUpdate = $accountDisableObject }
+    foreach ($key in $accountLevels) {
+        if ($key -ne 'USER') {    
+            $members = $importedAccounts | Where-Object { $_.AccountLevel -eq $key }
+           
+            if ($null -ne $members) {
+    
+                Write-Output(
+                    @{
+                        AccountReferences   = @(
+                            $members.PynterId
+                        )
+                        PermissionReference = @{
+                            Reference = $key
+                        }                   
+                        DisplayName         = $key
+                        Description         = $key
+                    }
+                )        
             }
-            $updatePersonXmlBody = New-PynterSoapXmlBody @splatUpdatePersonXmlBody
-
-            if (-not($actionContext.DryRun -eq $true)) {
-                $splatUpdatePersonRequest = @{
-                    Uri    = "$($actionContext.configuration.BaseUrl)/service/apiService.asmx"
-                    Body   = $updatePersonXmlBody
-                    Method = 'POST'
-                }
-                $null = Invoke-PynterSOAPRequest @splatUpdatePersonRequest
-            }
-            else {
-                Write-Information "[DryRun] Disable Pynter account with accountReference: [$($actionContext.References.Account)], will be executed during enforcement"
-            }
-
-            $outputContext.Success = $true
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = 'Disable account was successful'
-                    IsError = $false
-                })
-            break
-        }
-
-        'NotFound' {
-            Write-Information "Pynter account: [$($actionContext.References.Account)] could not be found, possibly indicating that it could be deleted"
-            $outputContext.Success = $true
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "Pynter account: [$($actionContext.References.Account)] could not be found, possibly indicating that it could be deleted"
-                    IsError = $false
-                })
-            break
         }
     }
+
+    Write-Information 'Target account permission import completed'
 }
 catch {
     $outputContext.success = $false
@@ -290,11 +293,11 @@ catch {
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-PynterError -ErrorObject $ex
-        $auditMessage = "Could not disable Pynter account. Error: $($errorObj.FriendlyMessage)"
+        $auditMessage = "Could not create or correlate Pynter account. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditMessage = "Could not disable Pynter account. Error: $($_.Exception.Message)"
+        $auditMessage = "Could not create or correlate Pynter account. Error: $($ex.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{
